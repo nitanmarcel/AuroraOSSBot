@@ -79,9 +79,9 @@ async def approve(event):
     await bot.forward_messages(CHANNEL_ID, rep_msg, silent=True)
 
     if event.data == b"bug":
-        await event.edit("Your suggestion havs been forwarded to our channel! Thanks!")
+        await event.edit("Your bug repost has been forwarded to our channel! Thanks!")
     else:
-        await event.edit("Your suggestion havs been forwarded to our channel! Thanks!")
+        await event.edit("Your suggestion has been forwarded to our channel! Thanks!")
 
 
 if __name__ == "__main__":
