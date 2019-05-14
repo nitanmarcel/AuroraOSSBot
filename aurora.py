@@ -2,6 +2,7 @@ import logging
 import os
 
 import telethon
+import aiohttp
 from telethon.tl.custom import Button
 
 logging.basicConfig(level=logging.INFO)
@@ -12,6 +13,9 @@ try:
     TOKEN = os.environ["TOKEN"]
 except KeyError as e:
     quit(e.args[0] + ' missing from environment variables')
+
+
+DISPENSER_HOOK = os.environ.get("DISPENSER_HOOK")
 
 bot = telethon.TelegramClient("aurorabot", API_ID, API_HASH)
 
@@ -82,6 +86,20 @@ async def approve(event):
         await event.edit("Your bug repost has been forwarded to our channel! Thanks!")
     else:
         await event.edit("Your suggestion has been forwarded to our channel! Thanks!")
+
+
+@bot.on(telethon.events.NewMessage(incoming=True, pattern="\/status"))
+async def dispenser_check(event):
+	reply = await event.reply("Checking Token Dispenser status")
+	async with aiohttp.ClientSession() as session:
+		status = None
+		async with session.get(DISPENSER_HOOK) as response:
+			status = response.status
+
+		if status != 200:
+			await reply.edit("The Token Dispenser is down! It will be fixed as soon as possible")
+		else:
+			await reply.edit("The Token Dispenser is up!")
 
 
 if __name__ == "__main__":
