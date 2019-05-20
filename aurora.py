@@ -80,8 +80,25 @@ async def approve(event):
         await event.answer("Only admins can use this button!")
         return
 
+
     rep_msg = await (await event.get_message()).get_reply_message()
-    await bot.forward_messages(CHANNEL_ID, rep_msg, silent=True)
+    user = "[{}](tg://user?id={})".format(rep_msg.sender.first_name, rep_msg.sender.id)
+    chat = "[{}](https://t.me/{})".format(rep_msg.chat.title, rep_msg.chat.username)
+    file = rep_msg.photo or rep_msg.document
+    text = rep_msg.text
+
+    if text:
+        if text.startswith("/bug"):
+            text = re.sub(r"^/bug ", "", text)
+        elif text.startswith("/suggestion"):
+            text = re.sub(r"^/suggestion ", "", text)
+
+
+    out_format = "{} from {} in {}: \n\n{}".format("Bug" if rep_msg.text.startswith("/bug") else "Suggestion",
+                                user, chat, text)
+
+
+    await bot.send_message(CHANNEL_ID, message=out_format, silent=True, file=file)
 
     if event.data == b"bug":
         await event.edit("Your bug repost has been forwarded to our channel! Thanks!")
@@ -102,7 +119,7 @@ async def dispenser_check(event):
         else:
             await reply.edit("The Token Dispenser is up!")
 
-@bot.on(telethon.events.NewMessage(incoming=True, pattern="\/nightly"))
+@bot.on(telethon.events.NewMessage(incoming=True, pattern="\/nightly", chats=[-1001361570927]))
 async def latest_nightly(event):
     url = "http://auroraoss.com/Nightly/"
     file = None
