@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 
 import telethon
 import aiohttp
@@ -90,16 +91,37 @@ async def approve(event):
 
 @bot.on(telethon.events.NewMessage(incoming=True, pattern="\/status"))
 async def dispenser_check(event):
-	reply = await event.reply("Checking Token Dispenser status")
-	async with aiohttp.ClientSession() as session:
-		status = None
-		async with session.get(DISPENSER_HOOK) as response:
-			status = response.status
+    reply = await event.reply("Checking Token Dispenser status")
+    async with aiohttp.ClientSession() as session:
+        status = None
+        async with session.get(DISPENSER_HOOK) as response:
+            status = response.status
 
-		if status != 200:
-			await reply.edit("The Token Dispenser is down! It will be fixed as soon as possible")
-		else:
-			await reply.edit("The Token Dispenser is up!")
+        if status != 200:
+            await reply.edit("The Token Dispenser is down! It will be fixed as soon as possible")
+        else:
+            await reply.edit("The Token Dispenser is up!")
+
+@bot.on(telethon.events.NewMessage(incoming=True, pattern="\/nightly"))
+async def latest_nightly(event):
+    url = "http://auroraoss.com/Nightly/"
+    file = None
+    reply = await event.reply("Fetching apk file..")
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            text = await response.text()
+            versions = re.findall("/Nightly/AuroraStore-nightly-signed-(\d+)", text)
+            latest_version = max(versions)
+            file = "AuroraStore-Nightly-" + latest_version + ".apk"
+        async with session.get(url + "/AuroraStore-nightly-signed-" + latest_version + ".apk") as f_response:
+            with open(file, "wb") as apk_file:
+                apk_file.write(await f_response.read())
+    await event.reply(file=file)
+    await reply.delete()
+
+    if os.path.isfile(file):
+        os.remove(file)
+
 
 
 if __name__ == "__main__":
