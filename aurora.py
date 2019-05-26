@@ -69,41 +69,45 @@ async def add_suggestions(event):
         REPLY = "Thanks for your bug report. Please await admin's aproval"
         data = b"bug"
 
-    await bot.send_message(event.chat_id, REPLY, buttons=Button.inline("Approve", data), reply_to=event.reply_to_msg_id or event)
+    await bot.send_message(event.chat_id, REPLY, buttons=[Button.inline("Approve", data), Button.inline("Reject", b"no" + data)], reply_to=event.reply_to_msg_id or event)
 
 
 @bot.on(telethon.events.CallbackQuery())
 async def approve(event):
-    if event.data not in (b"sugg", b"bug"):
-        return
     if event.sender_id not in MODERATORS:
         await event.answer("Only admins can use this button!")
         return
 
-
-    rep_msg = await (await event.get_message()).get_reply_message()
-    user = "[{}](tg://user?id={})".format(rep_msg.sender.first_name, rep_msg.sender.id)
-    chat = "[{}](https://t.me/{})".format(rep_msg.chat.title, rep_msg.chat.username)
-    file = rep_msg.photo or rep_msg.document
-    text = rep_msg.text
-
-    if text:
-        if text.startswith("/bug"):
-            text = re.sub(r"^/bug ", "", text)
-        elif text.startswith("/suggestion"):
-            text = re.sub(r"^/suggestion ", "", text)
-
-
-    out_format = "{} from {} in {}: \n\n{}".format("Bug" if rep_msg.text.startswith("/bug") else "Suggestion",
-                                user, chat, text)
-
-
-    await bot.send_message(CHANNEL_ID, message=out_format, silent=True, file=file)
-
-    if event.data == b"bug":
-        await event.edit("Your bug repost has been forwarded to our channel! Thanks!")
+    if event.data not in (b"sugg", b"bug", b"nosugg", b"nobug"):
+        return
+    elif event.data == b"nosugg":
+        await event.edit("Your suggestion has been rejected!")
+    elif event.data == b"nobug":
+        await event.edit("Your bug report has been rejected!")
     else:
-        await event.edit("Your suggestion has been forwarded to our channel! Thanks!")
+        rep_msg = await (await event.get_message()).get_reply_message()
+        user = "[{}](tg://user?id={})".format(rep_msg.sender.first_name, rep_msg.sender.id)
+        chat = "[{}](https://t.me/{})".format(rep_msg.chat.title, rep_msg.chat.username)
+        file = rep_msg.photo or rep_msg.document
+        text = rep_msg.text
+
+        if text:
+            if text.startswith("/bug"):
+                text = re.sub(r"^/bug ", "", text)
+            elif text.startswith("/suggestion"):
+                text = re.sub(r"^/suggestion ", "", text)
+
+
+        out_format = "{} from {} in {}: \n\n{}".format("Bug" if rep_msg.text.startswith("/bug") else "Suggestion",
+                                    user, chat, text)
+
+
+        await bot.send_message(CHANNEL_ID, message=out_format, silent=True, file=file)
+
+        if event.data == b"bug":
+            await event.edit("Your bug report has been forwarded to our channel! Thanks!")
+        else:
+            await event.edit("Your suggestion has been forwarded to our channel! Thanks!")
 
 
 @bot.on(telethon.events.NewMessage(incoming=True, pattern="\/status"))
