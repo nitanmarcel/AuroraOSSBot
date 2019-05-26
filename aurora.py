@@ -5,6 +5,7 @@ import re
 import telethon
 import aiohttp
 from telethon.tl.custom import Button
+import datetime
 
 logging.basicConfig(level=logging.INFO)
 
@@ -80,10 +81,14 @@ async def approve(event):
 
     if event.data not in (b"sugg", b"bug", b"nosugg", b"nobug"):
         return
-    elif event.data == b"nosugg":
-        await event.edit("Your suggestion has been rejected!")
+    sender = await event.get_sender()
+    admin = "[{}](tg://user?id={})".format(sender.first_name, sender.id)
+    time = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+
+    if event.data == b"nosugg":
+        await event.edit("Your suggestion has been rejected by {} at `{}`!".format(admin, time))
     elif event.data == b"nobug":
-        await event.edit("Your bug report has been rejected!")
+        await event.edit("Your bug report has been rejected by {} at `{}`!".format(admin, time))
     else:
         rep_msg = await (await event.get_message()).get_reply_message()
         user = "[{}](tg://user?id={})".format(rep_msg.sender.first_name, rep_msg.sender.id)
@@ -98,16 +103,16 @@ async def approve(event):
                 text = re.sub(r"^/suggestion ", "", text)
 
 
-        out_format = "{} from {} in {}: \n\n{}".format("Bug" if rep_msg.text.startswith("/bug") else "Suggestion",
-                                    user, chat, text)
-
+        out_format = "{} from {} in {} \n\n{} \n\nApproved by {} at `{}`".format("Bug" if rep_msg.text.startswith("/bug") else "Suggestion",
+                                    user, chat, text, admin, time)
 
         await bot.send_message(CHANNEL_ID, message=out_format, silent=True, file=file)
 
         if event.data == b"bug":
-            await event.edit("Your bug report has been forwarded to our channel! Thanks!")
+            await event.edit("Your bug report has been forwarded to our channel by {} at `{}`! Thanks!".format(admin, time))
         else:
-            await event.edit("Your suggestion has been forwarded to our channel! Thanks!")
+            await event.edit("Your suggestion has been forwarded to our channel by {} at `{}`! Thanks!".format(admin, time))
+
 
 
 @bot.on(telethon.events.NewMessage(incoming=True, pattern="\/status"))
