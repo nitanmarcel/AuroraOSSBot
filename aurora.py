@@ -147,8 +147,68 @@ async def latest_nightly(event):
 
     if os.path.isfile(file):
         os.remove(file)
+        
+        
+        
+@bot.on(telethon.events.NewMessage(incoming=True, pattern="\/broadcast", from_users=[416195206]))
+async def broadcast(event):
+    for chat in OFFICIAL_CHATS:
+        message = event.text.split(None, 1)
+        if len(message) > 1:
+            await bot.send_message(chat, message[1])
+
+def __chat_action_lock(event):
+    if event.user_added:
+        return True
+    if event.user_joined:
+        return True
+    return
+
+@bot.on(telethon.events.ChatAction(func=__chat_action_lock))
+async def welcomemute(event):
+    if event.user_added:
+        user = event.get_added_by()
+    else:
+        user = event.get_input_user()
+    await bot(telethon.tl.functions.channel.EditBannedRequest(
+            telethon.tl.types.ChatBannedRights(
+                    send_messages=True,
+                    send_media=True,
+                    send_stickers=True,
+                    send_gifs=True,
+                    send_games=True,
+                    send_inline=True,
+                    embed_links=True
+            )
+    ))
+    await bot.send_message(event.input_chat, "Before continuing please press the button bellow!",
+                           buttons=[Button.inline("Press me to prove that you are human!", b'{}'.format(user.id))], reply_to=event.message.id)
 
 
+def __button_lock(event):
+    if not event.data.isalpha():
+        return True
+    return
+
+
+@bot.on(telethon.events.CallbackQuery(func=__button_lock))
+async def unmute_button(event):
+    sender = await event.get_sender()
+    if int(event.data) != int(sender.id):
+        event.answer("Who are you again?")
+    else:
+        await bot(telethon.tl.functions.channel.EditBannedRequest(
+                telethon.tl.types.ChatBannedRights(
+                        send_messages=None,
+                        send_media=None,
+                        send_stickers=None,
+                        send_gifs=None,
+                        send_games=None,
+                        send_inline=None,
+                        embed_links=None
+                )
+        ))
+        event.delete()
 
 if __name__ == "__main__":
     bot.run_until_disconnected()
