@@ -167,22 +167,26 @@ def __chat_action_lock(event):
 @bot.on(telethon.events.ChatAction(func=__chat_action_lock))
 async def welcomemute(event):
     if event.user_added:
-        user = event.get_added_by()
+        user = await event.get_added_by()
     else:
-        user = event.get_input_user()
-    await bot(telethon.tl.functions.channel.EditBannedRequest(
-            telethon.tl.types.ChatBannedRights(
-                    send_messages=True,
-                    send_media=True,
-                    send_stickers=True,
-                    send_gifs=True,
-                    send_games=True,
-                    send_inline=True,
-                    embed_links=True
-            )
-    ))
-    await bot.send_message(event.input_chat, "Before continuing please press the button bellow!",
-                           buttons=[Button.inline("Press me to prove that you are human!", b'{}'.format(user.id))], reply_to=event.message.id)
+        user = await event.get_user()
+    id = user.id
+    if id not in MODERATORS:
+        await bot(telethon.tl.functions.channels.EditBannedRequest(event.input_chat, id,
+                telethon.tl.types.ChatBannedRights(
+                        until_date=None,
+                        view_messages=None,
+                        send_messages=True,
+                        send_media=True,
+                        send_stickers=True,
+                        send_gifs=True,
+                        send_games=True,
+                        send_inline=True,
+                        embed_links=True
+                )
+        ))
+        await bot.send_message(event.input_chat, "Hi {}! Before continuing please press the button bellow!".format(user.username or user.first_name),
+                               buttons=[Button.inline("Press me to prove that you are human!", bytes(str(id).encode('utf8')))])
 
 
 def __button_lock(event):
@@ -194,11 +198,12 @@ def __button_lock(event):
 @bot.on(telethon.events.CallbackQuery(func=__button_lock))
 async def unmute_button(event):
     sender = await event.get_sender()
-    if int(event.data) != int(sender.id):
-        event.answer("Who are you again?")
+    if int(event.data.decode()) != int(sender.id):
+        await event.answer("Who are you again?")
     else:
-        await bot(telethon.tl.functions.channel.EditBannedRequest(
+        await bot(telethon.tl.functions.channels.EditBannedRequest(event.input_chat, sender.id,
                 telethon.tl.types.ChatBannedRights(
+                        until_date=None,
                         send_messages=None,
                         send_media=None,
                         send_stickers=None,
@@ -208,7 +213,7 @@ async def unmute_button(event):
                         embed_links=None
                 )
         ))
-        event.delete()
+        await event.delete()
 
 if __name__ == "__main__":
     bot.run_until_disconnected()
