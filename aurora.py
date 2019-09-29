@@ -130,7 +130,7 @@ async def dispenser_check(event):
 
 @bot.on(telethon.events.NewMessage(incoming=True, pattern="\/nightly", chats=[-1001361570927]))
 async def latest_nightly(event):
-    url = "http://auroraoss.com/Nightly/"
+    url = "https://auroraoss.com/AuroraStore/Nightly/"
     file = None
     reply = await event.reply("Fetching apk file..")
     async with aiohttp.ClientSession() as session:
