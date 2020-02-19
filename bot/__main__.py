@@ -118,7 +118,7 @@ async def welcome_mute(event):
             return
 
         participant = await bot(GetParticipantRequest(event.chat_id, user.id))
-        if not isinstance(participant.participant, (ChannelParticipantAdmin, ChannelParticipantCreator)):
+        if isinstance(participant.participant, (ChannelParticipantAdmin, ChannelParticipantCreator)):
             return
 
         await bot(EditBannedRequest(event.input_chat, user.id,
