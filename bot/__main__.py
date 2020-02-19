@@ -1,16 +1,17 @@
 import datetime
-
-from .helpers import CommandHandler, action, COMMANDS
-from telethon.tl.custom import Button
-from telethon.tl.functions.channels import GetParticipantRequest
-from telethon.tl.types import ChannelParticipantAdmin, ChannelParticipantCreator
-from telethon.events import CallbackQuery, ChatAction
-from telethon.tl.functions.channels import EditBannedRequest
-from telethon.tl.types import ChatBannedRights
-from . import bot, config
-import aiohttp
-import re
 import os
+import re
+
+import aiohttp
+from telethon.events import CallbackQuery, ChatAction
+from telethon.tl.custom import Button
+from telethon.tl.functions.channels import (EditBannedRequest,
+                                            GetParticipantRequest)
+from telethon.tl.types import (ChannelParticipantAdmin,
+                               ChannelParticipantCreator, ChatBannedRights)
+
+from . import bot, config
+from .helpers import COMMANDS, CommandHandler, action
 
 EMAIL_REGEX = '''(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])'''
 
@@ -115,6 +116,7 @@ async def welcome_mute(event):
         try:
             user = await event.get_user()
         except TypeError:
+            raise
             return
 
         participant = await bot(GetParticipantRequest(event.chat_id, user.id))
@@ -154,6 +156,9 @@ async def restrict_chat(event):
 @bot.on(CallbackQuery)
 @action('typing')
 async def check_report(event):
+    if event.data.decode() not in ('bug', 'sugg', 'nobug', 'nosugg'):
+        return
+
     sender = await event.get_sender()
     participant = await bot(GetParticipantRequest(event.chat_id, sender.id))
     if not isinstance(participant.participant, (ChannelParticipantAdmin, ChannelParticipantCreator)):
@@ -201,17 +206,19 @@ async def unmute_button(event):
         return await event.answer("Who are you again?")
     await bot(EditBannedRequest(event.input_chat, user.id,
                                 ChatBannedRights(
-                                    until_date=None,
+                                    until_date=datetime.datetime.now() + datetime.timedelta(hours=24),
                                     send_messages=None,
-                                    send_media=None,
-                                    send_stickers=None,
-                                    send_gifs=None,
-                                    send_games=None,
-                                    send_inline=None,
-                                    embed_links=None
+                                    send_media=True,
+                                    send_stickers=True,
+                                    send_gifs=True,
+                                    send_games=True,
+                                    send_inline=True,
+                                    embed_links=True
                                 )
                                 ))
-    await event.delete()
+
+    await event.answer("Thanks for proving you are not a robot!\nYou will be restricted to sending only text messages for the next 24 hours!", alert=True)
+    return await event.delete()
 
 
 if __name__ == '__main__':
