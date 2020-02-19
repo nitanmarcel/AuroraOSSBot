@@ -112,7 +112,11 @@ async def add_bug(event):
 @action('typing')
 async def welcome_mute(event):
     if event.user_added or event.user_joined:
-        user = await event.get_user()
+        try:
+            user = await event.get_user()
+        except TypeError:
+            return
+
         participant = await bot(GetParticipantRequest(event.chat_id, user.id))
         if not isinstance(participant.participant, (ChannelParticipantAdmin, ChannelParticipantCreator)):
             return

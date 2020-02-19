@@ -29,8 +29,11 @@ def _on_command(command: str, prefixes: Union[list, str], *args, **kwargs):
 def action(_action: str):
     def decorator(f):
         async def wrapper(event):
-            async with bot.action(event.chat_id, _action):
-                await f(event)
+            try:
+                async with bot.action(event.chat_id, _action):
+                    await f(event)
+            except TypeError:
+                return
 
         return wrapper
 
